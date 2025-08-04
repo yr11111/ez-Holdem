@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dezhou</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .flex-container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .flex-item {
+            width: 33%;
+            height: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+            white-space: pre-wrap;
+        }
+
+        button {
+            margin: 5px;
+        }
+
+        .highlight {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>dezhou</h1>
+    <button id="connectBtn">join</button>
+    <br>
+    <input type="text" id="nameInput" placeholder="Enter name">
+    <input type="text" id="chipInput" placeholder="Enter chip">
+    <button id="sendNameChipBtn">Send Name and Chip</button>
+    <button id="watch">观战 </button>
+
+    <button id="sendBtn">ag</button>
+    <button id="sendturn">turn</button>
+    <button id="sendfollow">follow</button>
+
+    <input type="text" id="addCount" placeholder="Enter add">
+    <button id="add">add chip</button>
+    <button id="fold">fold</button>
+    <button id="open">open</button>
+    <div class="flex-container">
+        <div id="messages" class="flex-item"></div>
+        <div id="chip" class="flex-item flex-item-short"></div>
+        <div id="clipCount" class="flex-item flex-item-short"></div>
+    </div>
+    <div class="flex-container">
+        <button id="clearMessage">clear message</button>
+        <button id="clearChip">clear chip</button>
+        <button id="clearAdd">clear add</button>
+    </div>
+    <input type="text" id="customMessageInput" placeholder="Enter your message">
+    <button id="sendCustomMessageBtn">Send Custom Message</button>
+
+    <div class="flex-container">
+        <div id="customMessageDisplay" class="flex-item"></div>
+        <div id="openDisplay" class="flex-item flex-item-short"></div>
+        <div id="orderDisplay" class="flex-item flex-item-short"></div>
+    </div>
+    <button id="clearAll">clearAll </button>
+
+    <script>
+        let socket;
+
+        document.getElementById('connectBtn').addEventListener('click', function () {
+            socket = new WebSocket('ws://192.168.3.7:6868/server'); // 替换为你的WebSocket URL
+
+            socket.onmessage = function (event) {
+                const message = event.data;
+                if (message.startsWith('#')) {
+                    document.getElementById('chip').innerText += message.substring(1) + '\n';
+                } else if (message.startsWith('$')) {
+
+                    // var textContent = message.substring(1);
+                    // // 找到 "+" 字符的位置
+                    // var plusIndex = textContent.indexOf("+");
+                    // // 如果找到 "+" 字符
+                    // if (plusIndex !== -1) {
+                    //     // 截取 "+" 及其后的内容
+                    //     var beforePlus = textContent.substring(0, plusIndex);
+                    //     var afterPlus = textContent.substring(plusIndex);
+                    //     // 将 "+" 及其后的内容标红
+                    //     var highlightedText = beforePlus + '<span class="highlight">' + afterPlus + '</span>';
+                    //     // 替换文本内容
+                    document.getElementById('clipCount').innerText += message.substring(1) + '\n';
+                    // }
+
+
+                } else if (message.startsWith('m')) {
+                    if (message.startsWith('m底牌') || message.startsWith('m牛牛')) {
+                        document.getElementById('messages').innerText = '';
+                        document.getElementById('clipCount').innerText += '\n';
+                    }
+                    document.getElementById('messages').innerText += message.substring(1) + '\n';
+
+                } else if (message.startsWith('all')) {
+                    document.getElementById('customMessageDisplay').innerText += message.substring(3) + '\n';
+                }
+                else if (message.startsWith('order')) {
+                    document.getElementById('orderDisplay').innerText = message.substring(5) + '\n';
+                }
+                else if (message.startsWith('open')) {
+                    document.getElementById('openDisplay').innerText = message.substring(4) + '\n';
+                }
+            };
+
+            socket.onerror = function (error) {
+                document.getElementById('messages').innerText += '服务器错误:' + error.message + '\n';
+            };
+
+            socket.onclose = function (event) {
+                document.getElementById('messages').innerText += '服务器连接已断开.\n';
+            };
+        });
+
+        document.getElementById('sendBtn').addEventListener('click', function () {
+
+            document.getElementById('messages').innerText = '';
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send("ag");
+                document.getElementById('messages').innerText += 'ag' + '\n';
+            } else {
+                document.getElementById('messages').innerText += 'WebSocket is not connected.\n';
+            }
+        });
+
+        document.getElementById('sendturn').addEventListener('click', function () {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send("turn");
+                document.getElementById('clipCount').innerText += '\n';
+            } else {
+                document.getElementById('messages').innerText += 'WebSocket is not connected.\n';
+            }
+        });
+
+        document.getElementById('sendfollow').addEventListener('click', function () {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send("follow");
+                document.getElementById('clipCount').innerText += '\n';
+
+            } else {
+                document.getElementById('messages').innerText += 'WebSocket is not connected.\n';
+            }
+        });
+
+
+
+        document.getElementById('sendNameChipBtn').addEventListener('click', function () {
+            const name = document.getElementById('nameInput').value;
+            const chip = document.getElementById('chipInput').value;
+            const message = `#${name}#${chip}`;
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(message);
+            } else {
+                document.getElementById('messages').innerText += 'WebSocket is not connected.\n';
+            }
+        });
+
+        document.getElementById('add').addEventListener('click', function () {
+            const add = document.getElementById('addCount').value;
+            if (add == "" || add == null) {
+                add = 0;
+            }
+            const message = `$${add}`;
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(message);
+                document.getElementById('count').innerText += `Sent "${message}" to server.\n`;
+            } else {
+                document.getElementById('count').innerText += 'WebSocket is not connected.\n';
+            }
+        });
+
+        document.getElementById('clearMessage').addEventListener('click', function () {
+
+            document.getElementById('messages').innerText = '';
+
+        });
+        document.getElementById('clearChip').addEventListener('click', function () {
+
+            document.getElementById('chip').innerText = '';
+
+        });
+        document.getElementById('clearAdd').addEventListener('click', function () {
+
+            document.getElementById('clipCount').innerText = '';
+
+        });
+
+        document.getElementById('fold').addEventListener('click', function () {
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send('fold');
+            }
+        });
+        document.getElementById('open').addEventListener('click', function () {
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send('open');
+            }
+        });
+
+        document.getElementById('sendCustomMessageBtn').addEventListener('click', function () {
+            const customMessage = document.getElementById('customMessageInput').value;
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send('all' + customMessage);
+            }
+        });
+
+        document.getElementById('clearAll').addEventListener('click', function () {
+
+            document.getElementById('customMessageDisplay').innerText = '';
+
+        });
+
+        document.getElementById('watch').addEventListener('click', function () {
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send('watch');
+            }
+        });
+
+        document.getElementById('sendOrderBtn').addEventListener('click', function () {
+            const customMessage = document.getElementById('orderInput').value;
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send('order' + customMessage);
+            }
+        });
+
+
+
+    </script>
+</body>
+
+</html>
