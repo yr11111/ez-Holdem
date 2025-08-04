@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dezhou</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .flex-container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .flex-item {
+            width: 33%;
+            height: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+            white-space: pre-wrap;
+        }
+
+        button {
+            margin: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>dezhou</h1>
+    <button id="connectBtn">join</button>
+    <br>
+    <button id="watch">观战 </button>
+    <input type="text" id="nameInput" placeholder="Enter name">
+    <input type="text" id="chipInput" placeholder="Enter chip">
+    <button id="sendNameChipBtn">Send Name and Chip</button>
+    <input type="text" id="addCount" placeholder="Enter add">
+    <button id="add">add chip</button>
+    <button id="fold">fold</button>
+
+    <div class="flex-container">
+        <div id="messages" class="flex-item"></div>
+        <div id="chip" class="flex-item flex-item-short"></div>
+        <div id="clipCount" class="flex-item flex-item-short"></div>
+    </div>
+    <div class="flex-container">
+        <button id="clearMessage">clear message</button>
+        <button id="clearChip">clear chip</button>
+        <button id="clearAdd">clear add</button>
+    </div>
+    <input type="text" id="customMessageInput" placeholder="Enter your message">
+    <button id="sendCustomMessageBtn">Send Custom Message</button>
+    <div class="flex-container">
+        <div id="customMessageDisplay" class="flex-item"></div>
+        <div id="openDisplay" class="flex-item flex-item-short"></div>
+
+        <div id="orderDisplay" class="flex-item flex-item-short"></div>
+    </div>
+    <button id="clearAll">clearAll </button>
+
+    <script>
+
+        let socket;
+        document.getElementById('connectBtn').addEventListener('click', function () {
+            socket = new WebSocket('ws://cn-qz-plc-1.ofalias.net:59399/server'); // 替换为你的WebSocket URL
+            //socket = new WebSocket('ws://192.168.3.7:6868/websocket-server'); // 替换为你的WebSocket URL
+
+            socket.onmessage = function (event) {
+                const message = event.data;
+                if (message.startsWith('#')) {
+                    document.getElementById('chip').innerText += message.substring(1) + '\n';
+                } else if (message.startsWith('$')) {
+                    document.getElementById('clipCount').innerText += message.substring(1) + '\n';
+                } else if (message.startsWith('m')) {
+                    if (message.startsWith('m底牌') || message.startsWith('m牛牛')) {
+                        document.getElementById('messages').innerText = '';
+                        document.getElementById('clipCount').innerText += '\n';
+                    }
+                    if (message.startsWith('m公共牌')) {
+                        document.getElementById('clipCount').innerText += '\n';
+                    }
+
+                    document.getElementById('messages').innerText += message.substring(1) + '\n';
+                } else if (message.startsWith('all')) {
+                    document.getElementById('customMessageDisplay').innerText += message.substring(3) + '\n';
+                } else if (message.startsWith('order')) {
+                    document.getElementById('orderDisplay').innerText = message.substring(5) + '\n';
+                }else if (message.startsWith('open')) {
+                    document.getElementById('openDisplay').innerText = message.substring(4) + '\n';
+                }
+            };
+
+            socket.onerror = function (error) {
+                document.getElementById('messages').innerText += '服务器错误:' + error.message + '\n';
+            };
+
+            socket.onclose = function (event) {
+                document.getElementById('messages').innerText += '服务器连接已断开.\n';
+            };
+        });
+
+
+        document.getElementById('sendNameChipBtn').addEventListener('click', function () {
+            const name = document.getElementById('nameInput').value;
+            const chip = document.getElementById('chipInput').value;
+            const message = `#${name}#${chip}`;
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(message);
+            } else {
+                document.getElementById('messages').innerText += 'WebSocket is not connected.\n';
+            }
+        });
+
+        document.getElementById('add').addEventListener('click', function () {
+            const add = document.getElementById('addCount').value;
+            if (add == "" || add == null) {
+                add = 0;
+            }
+            const message = `$${add}`;
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(message);
+                document.getElementById('count').innerText += `Sent "${message}" to server.\n`;
+            } else {
+                document.getElementById('count').innerText += 'WebSocket is not connected.\n';
+            }
+        });
+        document.getElementById('clearMessage').addEventListener('click', function () {
+
+            document.getElementById('messages').innerText = '';
+
+        });
+        document.getElementById('clearAdd').addEventListener('click', function () {
+
+            document.getElementById('clipCount').innerText = '';
+
+        });
+        document.getElementById('clearChip').addEventListener('click', function () {
+
+            document.getElementById('chip').innerText = '';
+
+        });
+
+        document.getElementById('fold').addEventListener('click', function () {
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send('fold');
+            }
+        });
+        document.getElementById('sendCustomMessageBtn').addEventListener('click', function () {
+            const customMessage = document.getElementById('customMessageInput').value;
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send('all' + customMessage);
+            }
+        });
+        document.getElementById('clearAll').addEventListener('click', function () {
+
+            document.getElementById('customMessageDisplay').innerText = '';
+
+        });
+        document.getElementById('watch').addEventListener('click', function () {
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send('watch');
+            }
+        });
+
+        
+
+    </script>
+</body>
+
+</html>
